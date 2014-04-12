@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>App Usage</title>
+  <link rel="stylesheet" type="text/css" href="/static/base.css">
+</head>
+<body>
+  <input type="button" onclick="older();" value="<"  class="forward btn"/>
+  <div id="graph">
+    <div id="body"></div>
+    <div id="timeline"></div>
+  </div>
+  <input type="button" onclick="newer();" value=">" class="backward btn"/>
+
+  <script type='text/javascript'>
+    var allData = {{ .Data }};
+  </script>
+  <script type='text/javascript' src="/static/d3.js"></script>
+  <script type='text/javascript' src="/static/d3-timeline.js"></script>
+  <script type='text/javascript' src="/static/graph.js"></script>
+</body>
+</html>
