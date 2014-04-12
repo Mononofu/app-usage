@@ -259,7 +259,7 @@ func tryGetHostname(name string) string {
 	}
 	titleParts := strings.Split(name, "-")
 	host := titleParts[len(titleParts)-2]
-	return strings.Replace(strings.Replace(host, "www", "", -1), ".com", "", -1)
+	return strings.Replace(strings.Replace(host, "www.", "", -1), ".com", "", -1)
 }
 
 type int64Slice []int64
