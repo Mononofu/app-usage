@@ -51,7 +51,7 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 
 	q = datastore.NewQuery("Piece").
 		Filter("Start >=", day).
-		Filter("Start <", day).
+		Filter("Start <", day.Add(time.Hour*24)).
 		Order("Start")
 	var pieces []models.Piece
 	_, err = q.GetAll(c, &pieces)
