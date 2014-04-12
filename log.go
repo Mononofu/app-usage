@@ -33,7 +33,7 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usageByDay := make(map[time.Time][]Usage)
+	usageByHour := make(map[time.Time][]Usage)
 	for _, usage := range usages {
 		if len(usage.Focused) == 0 {
 			continue
@@ -64,11 +64,11 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		hour := usageEvent.At.Truncate(time.Hour)
-		usageByDay[hour] = append(usageByDay[hour], usageEvent)
+		usageByHour[hour] = append(usageByHour[hour], usageEvent)
 	}
 
 	c := appengine.NewContext(r)
-	for hour, usage := range usageByDay {
+	for hour, usage := range usageByHour {
 		key := datastore.NewKey(c, "HourlyUsage", "", hour.Unix(), nil)
 		storedUsage := HourlyUsage{}
 		err := datastore.Get(c, key, &storedUsage)

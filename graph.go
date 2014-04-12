@@ -14,7 +14,8 @@ import (
 	"appengine/datastore"
 )
 
-const LogInterval = time.Duration(10) * time.Second
+const LogInterval = 10 * time.Second
+const IdleTimeout = 5 * time.Minute
 
 var graphTemplate = template.Must(template.ParseFiles("templates/graph.html"))
 
@@ -44,7 +45,7 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 	q := datastore.NewQuery("HourlyUsage").
 		Filter("At >", day).
 		Filter("At <", day.Add(time.Hour*24)).
-		Order("-At")
+		Order("At")
 	var usages []HourlyUsage
 	_, err = q.GetAll(c, &usages)
 	if err != nil {
@@ -54,12 +55,33 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger := MakeUsageLogger()
 	timestampByHostname := make(map[string][]int64)
+	var events []Usage
+	// Simulating a deque by keeping an index to which elements from the beginning we've already
+	// processed.
+	i := 0
 	for _, hourlyUsage := range usages {
+		sort.Sort(byAt(hourlyUsage.Events))
+
 		for _, usage := range hourlyUsage.Events {
-			logger.AddUsage(usage)
-			timestampByHostname[usage.Hostname] = append(timestampByHostname[usage.Hostname],
-				usage.At.Unix())
+			events = append(events, usage)
+
+			if usage.LastActivity < IdleTimeout {
+				for usage.At.Sub(events[i].At) > IdleTimeout {
+					logger.AddUsage(events[i])
+					timestampByHostname[events[i].Hostname] = append(timestampByHostname[events[i].Hostname],
+						events[i].At.Unix())
+					i++
+				}
+			} else {
+				events = []Usage{}
+				i = 0
+			}
 		}
+	}
+	for _, event := range events {
+		logger.AddUsage(event)
+		timestampByHostname[event.Hostname] = append(timestampByHostname[event.Hostname],
+			event.At.Unix())
 	}
 
 	// Make sure graph starts and ends at midnight by adding a pseudo-interval at the
@@ -267,3 +289,9 @@ type int64Slice []int64
 func (a int64Slice) Len() int           { return len(a) }
 func (a int64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a int64Slice) Less(i, j int) bool { return a[i] < a[j] }
+
+type byAt []Usage
+
+func (a byAt) Len() int           { return len(a) }
+func (a byAt) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byAt) Less(i, j int) bool { return a[i].At.Before(a[j].At) }
