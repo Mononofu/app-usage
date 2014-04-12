@@ -9,6 +9,8 @@ import (
 
 	"appengine"
 	"appengine/datastore"
+
+	"models"
 )
 
 type RawNote struct {
@@ -35,9 +37,9 @@ func midiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	piece := Piece{}
+	piece := models.Piece{}
 	for _, note := range notes {
-		piece.Notes = append(piece.Notes, Note{
+		piece.Notes = append(piece.Notes, models.Note{
 			Status:            note.Status,
 			Data1:             note.Data1,
 			Data2:             note.Data2,
@@ -62,7 +64,7 @@ func midiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type byAbsoluteTime []Note
+type byAbsoluteTime []models.Note
 
 func (a byAbsoluteTime) Len() int      { return len(a) }
 func (a byAbsoluteTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
