@@ -10,7 +10,7 @@ import (
 
 // patterns is a list of regular expressions that capture the project name from the window title,
 // e.g. "~/Dropbox/Programmieren/([^/]).*"
-func MakeSublimeUsage(patterns ...string) (UsageLogger, error) {
+func MakeSublimeUsage(patterns ...string) (Logger, error) {
 	var rs []*regexp.Regexp
 	for _, pattern := range patterns {
 		r, err := regexp.Compile(pattern)

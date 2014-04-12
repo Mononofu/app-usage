@@ -39,7 +39,7 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := datastore.NewQuery("HourlyUsage").
-		Filter("At >", day).
+		Filter("At >=", day).
 		Filter("At <", day.Add(time.Hour*24)).
 		Order("At")
 	var usages []models.HourlyUsage
@@ -49,15 +49,47 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usage, timestampByHostname, err := filterIdles(usages)
+	q = datastore.NewQuery("Piece").
+		Filter("Start >=", day).
+		Filter("Start <", day).
+		Order("Start")
+	var pieces []models.Piece
+	_, err = q.GetAll(c, &pieces)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to query midi logs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	logger, timestampByHostname, err := filterIdles(usages)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to filter usage: %v", err), http.StatusInternalServerError)
 		return
 	}
 	allIntervals, total := calculateIntervals(day, timestampByHostname)
 
+	// Make the logger believe midi notes are app usage.
+	var pianoIntervals []map[string]int64
+	for _, piece := range pieces {
+		curPos := piece.Start
+		end := curPos.Add(piece.Length)
+		for curPos.Before(end) {
+			logger.AddUsage(models.Usage{Focused: models.App{Process: "piano"}})
+			curPos = curPos.Add(common.LogInterval)
+		}
+		pianoIntervals = append(pianoIntervals, map[string]int64{
+			"starting_time": piece.Start.Unix() * 1000,
+			"ending_time":   end.Unix() * 1000,
+		})
+	}
+	if pianoIntervals != nil {
+		allIntervals = append(allIntervals, map[string]interface{}{
+			"label": "piano",
+			"times": pianoIntervals,
+		})
+	}
+
 	data := make(map[string]interface{})
-	data["Usage"] = usage
+	data["Usage"] = logger.Serialize()
 	data["Intervals"] = allIntervals
 	data["Total"] = total
 	data["Date"] = day.Format("2006-01-02")
@@ -71,8 +103,8 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func filterIdles(usages []models.HourlyUsage) (map[string]interface{}, map[string][]int64, error) {
-	logger, err := usage.MakeUsageLogger()
+func filterIdles(usages []models.HourlyUsage) (usage.Logger, map[string][]int64, error) {
+	logger, err := usage.MakeLogger()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,7 +139,7 @@ func filterIdles(usages []models.HourlyUsage) (map[string]interface{}, map[strin
 			event.At.Unix())
 	}
 
-	return logger.Serialize(), timestampByHostname, nil
+	return logger, timestampByHostname, nil
 }
 
 func calculateIntervals(day time.Time, timestampByHostname map[string][]int64) ([]map[string]interface{}, time.Duration) {

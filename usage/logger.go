@@ -4,14 +4,14 @@ import (
 	"models"
 )
 
-type UsageLogger interface {
+type Logger interface {
 	AddUsage(usage models.Usage)
 	Serialize() map[string]interface{}
 }
 
-func MakeUsageLogger() (UsageLogger, error) {
+func MakeLogger() (Logger, error) {
 	l := usageLogger{}
-	l.apps = make(map[string]UsageLogger)
+	l.apps = make(map[string]Logger)
 	l.apps["chrome"] = MakeChromeUsage()
 	sublime, err := MakeSublimeUsage("~/Dropbox/Programmieren/([^/]+)/.*",
 		"~/Programmieren/([^/]+)/.*")
@@ -23,7 +23,7 @@ func MakeUsageLogger() (UsageLogger, error) {
 }
 
 type usageLogger struct {
-	apps map[string]UsageLogger
+	apps map[string]Logger
 }
 
 func (l *usageLogger) AddUsage(usage models.Usage) {

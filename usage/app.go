@@ -7,7 +7,7 @@ import (
 	"models"
 )
 
-func MakeAppUsage(process string) UsageLogger {
+func MakeAppUsage(process string) Logger {
 	return &appUsage{
 		process:    process,
 		categories: make(map[string]time.Duration),

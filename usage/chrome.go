@@ -9,7 +9,7 @@ import (
 	"models"
 )
 
-func MakeChromeUsage() UsageLogger {
+func MakeChromeUsage() Logger {
 	return &chromeUsage{
 		sites: make(map[string]time.Duration),
 	}
