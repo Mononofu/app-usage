@@ -4,6 +4,21 @@ import (
 	"time"
 )
 
+type Piece struct {
+	Start  time.Time
+	Length time.Duration `datastore:",noindex"`
+	Notes  []Note        `datastore:",noindex"`
+}
+
+type Note struct {
+	Status            int16
+	Data1             int16
+	Data2             int16
+	Data3             int16
+	RelativeTimestamp int32
+	AbsoluteTimestamp time.Time
+}
+
 type HourlyUsage struct {
 	At     time.Time // Hour of the usage
 	Events []Usage   `datastore:",noindex"`

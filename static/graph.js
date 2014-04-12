@@ -117,23 +117,17 @@ function timelineRect(intervals) {
 }
 
 function update() {
-  document.getElementById("timeline").innerHTML = "";
-  document.getElementById("body").innerHTML = "";
-  draw_map(allData[curIdx].data)
-  timelineRect([{times: allData[curIdx].intervals}]);
-  document.title = duration(allData[curIdx].total) + " on " + allData[curIdx].date + " - AppUsage";
+  draw_map(usage)
+  timelineRect(intervals);
+ //  document.title = duration(allData[curIdx].total) + " on " + allData[curIdx].date + " - AppUsage";
 }
 
 function older() {
-    if(curIdx < allData.length - 1)
-        ++curIdx
-    update();
+  window.location = "/graph/?ts=" + (timestamp - 86400);
 }
 
 function newer() {
-    if(curIdx > 0)
-      --curIdx;
-    update();
+  window.location = "/graph/?ts=" + (timestamp + 86400);
 }
 
 var curIdx = 0;
