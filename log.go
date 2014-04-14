@@ -55,7 +55,7 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 
 		hostname := usage.Hostname
 		if hostname == "" {
-			hostname = "mononofu-laptop"
+			hostname = "unknown"
 		}
 
 		usageEvent := models.Usage{

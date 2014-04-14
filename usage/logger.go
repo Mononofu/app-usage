@@ -14,7 +14,7 @@ func MakeLogger() (Logger, error) {
 	l.apps = make(map[string]Logger)
 	l.apps["chrome"] = MakeChromeUsage()
 	sublime, err := MakeSublimeUsage("~/Dropbox/Programmieren/([^/]+)/.*",
-		"~/Programmieren/([^/]+)/.*")
+		"~/Programmieren/([^/]+)/.*", "~/([^/]+)/google3/.*")
 	if err != nil {
 		return nil, err
 	}

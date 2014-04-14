@@ -109,22 +109,28 @@ func filterIdles(usages []models.HourlyUsage) (usage.Logger, map[string][]int64,
 		return nil, nil, err
 	}
 
-	timestampByHostname := make(map[string][]int64)
-	var events []models.Usage
-	// Simulating a deque by keeping an index to which elements from the beginning we've already
-	// processed.
-	i := 0
+	usageByHostname := make(map[string][]models.Usage)
 	for _, hourlyUsage := range usages {
-		sort.Sort(byAt(hourlyUsage.Events))
-
 		for _, usage := range hourlyUsage.Events {
+			usageByHostname[usage.Hostname] = append(usageByHostname[usage.Hostname], usage)
+		}
+	}
+
+	timestampByHostname := make(map[string][]int64)
+	for hostname, usages := range usageByHostname {
+		sort.Sort(byAt(usages))
+
+		var events []models.Usage
+		// Simulating a deque by keeping an index to which elements from the beginning we've already
+		// processed.
+		i := 0
+		for _, usage := range usages {
 			events = append(events, usage)
 
 			if usage.LastActivity < common.IdleTimeout {
 				for usage.At.Sub(events[i].At) > common.IdleTimeout {
 					logger.AddUsage(events[i])
-					timestampByHostname[events[i].Hostname] = append(timestampByHostname[events[i].Hostname],
-						events[i].At.Unix())
+					timestampByHostname[hostname] = append(timestampByHostname[hostname], events[i].At.Unix())
 					i++
 				}
 			} else {
@@ -132,11 +138,10 @@ func filterIdles(usages []models.HourlyUsage) (usage.Logger, map[string][]int64,
 				i = 0
 			}
 		}
-	}
-	for _, event := range events {
-		logger.AddUsage(event)
-		timestampByHostname[event.Hostname] = append(timestampByHostname[event.Hostname],
-			event.At.Unix())
+		for _, event := range events {
+			logger.AddUsage(event)
+			timestampByHostname[hostname] = append(timestampByHostname[hostname], event.At.Unix())
+		}
 	}
 
 	return logger, timestampByHostname, nil
