@@ -1,6 +1,7 @@
 package usage
 
 import (
+	"encoding/base64"
 	"encoding/csv"
 	"fmt"
 	"io/ioutil"
@@ -68,8 +69,19 @@ func incomingMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, file := range csvs {
-		c.Infof("Got CSV %q: %q", file.Filename, strings.Trim(file.Content, " \n\r"))
-		reader := csv.NewReader(strings.NewReader(strings.Trim(file.Content, " \n\r")))
+		content := file.Content
+		if file.Header.Get("Content-Transfer-Encoding") == "base64" {
+			data, err := base64.StdEncoding.DecodeString(content)
+			if err != nil {
+				c.Errorf("Failed to decode base64: %v", err)
+				continue
+			}
+			content = string(data)
+		} else {
+			content = strings.Trim(content, " \n\r")
+		}
+
+		reader := csv.NewReader(strings.NewReader(content))
 		records, err := reader.ReadAll()
 		if err != nil {
 			c.Errorf("Failed to read CSV: %v", err)
@@ -78,6 +90,8 @@ func incomingMail(w http.ResponseWriter, r *http.Request) {
 
 		rows := csvMap(records)
 
+		var keys []*datastore.Key
+		var tubes []*models.Tube
 		for _, row := range rows {
 			journey := row["Journey/Action"]
 			journey = strings.Replace(journey, "[London Underground]", "", -1)
@@ -102,12 +116,14 @@ func incomingMail(w http.ResponseWriter, r *http.Request) {
 				Start: start,
 				End:   end,
 			}
-			key := datastore.NewKey(c, "Tube", "", tube.Start.Unix(), nil)
-			_, err = datastore.Put(c, key, &tube)
-			if err != nil {
-				c.Errorf("Failed to save tube journey for %s: %v", tube.Start, err)
-				continue
-			}
+			tubes = append(tubes, &tube)
+			keys = append(keys, datastore.NewKey(c, "Tube", "", tube.Start.Unix(), nil))
+		}
+
+		_, err = datastore.PutMulti(c, keys, tubes)
+		if err != nil {
+			c.Errorf("Failed to save tube journey: %v", err)
+			continue
 		}
 	}
 }
