@@ -71,29 +71,34 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
 	for hour, usage := range usageByHour {
-		key := datastore.NewKey(c, "HourlyUsage", "", hour.Unix(), nil)
-		storedUsage := models.HourlyUsage{}
-		err := datastore.Get(c, key, &storedUsage)
-		if err != nil {
-			storedUsage = models.HourlyUsage{
-				At: hour,
+		err := datastore.RunInTransaction(c, func(c appengine.Context) error {
+			key := datastore.NewKey(c, "HourlyUsage", "", hour.Unix(), nil)
+			storedUsage := models.HourlyUsage{}
+			err := datastore.Get(c, key, &storedUsage)
+			if err != nil {
+				storedUsage = models.HourlyUsage{
+					At: hour,
+				}
 			}
-		}
 
-		uniqueEvents := make(map[string]models.Usage)
-		storedUsage.Events = append(storedUsage.Events, usage...)
-		for _, event := range storedUsage.Events {
-			uniqueEvents[fmt.Sprintf("%s__%s", event.Hostname, event.At)] = event
-		}
-		storedUsage.Events = []models.Usage{}
-		for _, event := range uniqueEvents {
-			storedUsage.Events = append(storedUsage.Events, event)
-		}
+			uniqueEvents := make(map[string]models.Usage)
+			storedUsage.Events = append(storedUsage.Events, usage...)
+			for _, event := range storedUsage.Events {
+				uniqueEvents[fmt.Sprintf("%s__%s", event.Hostname, event.At)] = event
+			}
+			storedUsage.Events = []models.Usage{}
+			for _, event := range uniqueEvents {
+				storedUsage.Events = append(storedUsage.Events, event)
+			}
 
-		_, err = datastore.Put(c, key, &storedUsage)
+			_, err = datastore.Put(c, key, &storedUsage)
+			if err != nil {
+				return fmt.Errorf("Failed to save usage for %s: %v", hour, err)
+			}
+			return nil
+		}, nil)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to save usage for %s: %v", hour, err),
-				http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to apply transaction: %v", err), http.StatusInternalServerError)
 			return
 		}
 	}

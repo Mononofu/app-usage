@@ -105,6 +105,7 @@ function zoom(d) {
 
 function timelineRect(intervals) {
   var chart = d3.timeline()
+    .stack()
     .tickFormat({
       format: d3.time.format("%H"),
       tickTime: d3.time.hours,

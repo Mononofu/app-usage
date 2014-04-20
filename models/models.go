@@ -35,3 +35,10 @@ type App struct {
 	WindowTitle string `datastore:",noindex"`
 	Process     string `datastore:",noindex"`
 }
+
+type Tube struct {
+	Start time.Time
+	End   time.Time `datastore:",noindex"`
+	From  string    `datastore:",noindex"`
+	To    string    `datastore:",noindex"`
+}

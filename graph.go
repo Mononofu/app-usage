@@ -118,7 +118,7 @@ func filterIdles(usages []models.HourlyUsage) (usage.Logger, map[string][]int64,
 
 	timestampByHostname := make(map[string][]int64)
 	for hostname, usages := range usageByHostname {
-		sort.Sort(byAt(usages))
+		sort.Sort(common.ByAt(usages))
 
 		var events []models.Usage
 		// Simulating a deque by keeping an index to which elements from the beginning we've already
@@ -172,7 +172,7 @@ func calculateIntervals(day time.Time, timestampByHostname map[string][]int64) (
 		last_ts := timestamps[0]
 		interval_start := last_ts
 		for _, timestamp := range timestamps {
-			if timestamp > last_ts+int64(common.LogInterval.Seconds())+2 {
+			if timestamp > last_ts+int64(common.LogInterval.Seconds()*2)-1 {
 				intervals = append(intervals, map[string]int64{
 					"starting_time": interval_start * 1000,
 					"ending_time":   last_ts * 1000,
@@ -210,9 +210,3 @@ type int64Slice []int64
 func (a int64Slice) Len() int           { return len(a) }
 func (a int64Slice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a int64Slice) Less(i, j int) bool { return a[i] < a[j] }
-
-type byAt []models.Usage
-
-func (a byAt) Len() int           { return len(a) }
-func (a byAt) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byAt) Less(i, j int) bool { return a[i].At.Before(a[j].At) }
