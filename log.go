@@ -65,8 +65,11 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 			Hostname:     hostname,
 		}
 
-		hour := usageEvent.At.Truncate(time.Hour)
-		usageByHour[hour] = append(usageByHour[hour], usageEvent)
+		// Only log hours with less than an hour of inactivity.
+		if usageEvent.LastActivity < time.Hour {
+			hour := usageEvent.At.Truncate(time.Hour)
+			usageByHour[hour] = append(usageByHour[hour], usageEvent)
+		}
 	}
 
 	c := appengine.NewContext(r)
