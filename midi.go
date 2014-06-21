@@ -64,7 +64,7 @@ func midiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := beeminder.Update("piano", piece.Length.Minutes()); err != nil {
+	if err := beeminder.Update(c, "piano", piece.Length.Minutes()); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update beeminder: %v", err), http.StatusInternalServerError)
 		c.Errorf("Failed to update beeminder: %v", err)
 		return

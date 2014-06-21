@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"appengine"
+	"appengine/urlfetch"
 )
 
 const (
@@ -11,10 +14,11 @@ const (
 	username   = "mononofu"
 )
 
-func Update(goal string, value float64) error {
+func Update(c appengine.Context, goal string, value float64) error {
 	url := fmt.Sprintf("https://www.beeminder.com/api/v1/users/%s/goals/%s/datapoints.json?value=%f&auth_token=%s",
 		username, goal, value, auth_token)
-	res, err := http.Post(url, "application/json`", nil)
+	client := urlfetch.Client(c)
+	res, err := client.Post(url, "application/json`", nil)
 	if err != nil {
 		return err
 	}
