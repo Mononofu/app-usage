@@ -1,4 +1,4 @@
-package main
+package beeminder
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ const (
 	username   = "mononofu"
 )
 
-func update(goal string, value float64) error {
+func Update(goal string, value float64) error {
 	url := fmt.Sprintf("https://www.beeminder.com/api/v1/users/%s/goals/%s/datapoints.json?value=%f&auth_token=%s",
 		username, goal, value, auth_token)
 	res, err := http.Post(url, "application/json`", nil)
