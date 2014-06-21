@@ -58,8 +58,14 @@ func midiHandler(w http.ResponseWriter, r *http.Request) {
 	key := datastore.NewKey(c, "Piece", "", piece.Start.Unix(), nil)
 	_, err = datastore.Put(c, key, &piece)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save piece for %s: %v", piece.Start, err),
-			http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to save piece for %s: %v", piece.Start, err), http.StatusInternalServerError)
+		c.Errorf("Failed to save piece for %s: %v", piece.Start, err)
+		return
+	}
+
+	if err := beeminder.update("piano", piece.Length.Minutes()); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update beeminder: %v", err), http.StatusInternalServerError)
+		c.Errorf("Failed to update beeminder: %v", err)
 		return
 	}
 }
